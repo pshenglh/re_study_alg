@@ -1,7 +1,11 @@
+from union_find import UF 
+
+
 class Graph(object):
 
     def __init__(self, count_v):
         self.adj = []
+        self.edges = []
         for _ in range(count_v):
             self.adj.append([])
 
@@ -27,7 +31,7 @@ class DiGraph(Graph):
 
 class Edge(object):
 
-    def __init__(self, v, w, weight):
+    def __init__(self, v, w, weight=1):
         self.v = v
         self.w = w
         self.weight = weight
@@ -45,6 +49,22 @@ class Edge(object):
         return '{}-{}-{}'.format(self.v, self.w, self.weight)
 
 
+class DirectedEdge(object):
+
+    def __init__(self, v, w, weight):
+        self.v = v
+        self.w = w
+        self.weight = weight
+
+    def from_p(self):
+        return self.v
+
+    def to(self):
+        return self.w
+
+    def __repr__(self):
+        return '{}-{}-{}'.format(self.v, self.w, self.weight)
+
 class EdgeWeightGraph(Graph):
 
     def add_edge(self, e):
@@ -53,6 +73,7 @@ class EdgeWeightGraph(Graph):
 
         self.adj[v].insert(0, e)
         self.adj[w].insert(0, e)
+        self.edges.append(e)
 
 
 class DepthFirstPath(object):
@@ -237,6 +258,88 @@ class LazyPrimeMST(object):
                 self.min_pq.sort(key=lambda s: s.weight)
 
 
+class PrimeMST(object):
+    'not complete, need to be done future'
+
+    def __init__(self, g):
+        self.g = g
+        self.edge_to = [-1] * len(self.g.adj)
+        self.marked = [False] * len(self.adj)
+        self.dist_to = [float('inf')] * len(self.g.adj)
+        self.min_pq = {}
+
+        self.dist_to[0] = 0
+        self.min_pq.append([0, 0.0])
+        while self.min_pq:
+            self.visit(self.min_pq.pop(0)[0])
+
+    def visit(self, v):
+        self.marked[v] = True
+        for e in self.g.adj[v]:
+            w = e.other(v)
+            if self.marked[w]:
+                continue
+            if e.weight() < dist_to[w]:
+                self.edge_to[w] = e
+
+
+class KruskaMST(object):
+
+    def __init__(self, g):
+        self.g = g
+        self.mst = []
+        self.min_pq = []
+        self.uf = UF(len(self.g.adj))
+        for e in self.g.edges:
+            self.min_pq.append(e)
+        self.min_pq.sort(key=lambda e: e.weight)
+
+        while self.min_pq and len(self.msf) < len(self.g.adj) - 1:
+            e = self.min_pq.pop(0)
+            v = e.either()
+            w = e.other(v)
+
+            if self.uf.find(v) == self.uf.find(w):
+                continue
+            self.uf.union(v, w)
+            self.mst.append(e)
+
+
+class EdgeWeightedDigraph(EdgeWeightGraph):
+
+    def add_edge(self, e):
+        self.adj[e.from_p()].insert(0, e)
+        self.edges.append(e)
+
+
+class Dijkstra(object):
+
+    def __init__(self, g, s):
+        self.g = g
+        self.s = s
+        self.edge_to = [None] * len(self.g.adj)
+        self.dist_to = [float('inf')] * len(self.g.adj)
+        self.pq = []
+
+        self.pq.append((s, 0))
+        self.dist_to[0] = 0
+        while self.pq:
+            self.relax(self.pq.pop(0)[0])
+
+    def relax(self, v):
+        for e in self.g.adj[v]:
+            w = e.to()
+            if self.dist_to[w] > self.dist_to[v] + e.weight:
+                self.dist_to[w] = self.dist_to[v] + e.weight
+                self.edge_to[w] = e
+                if w in [d[0] for d in self.pq]:
+                    for i, j in enumerate(self.pq):
+                        self.pq[i] = (j[0], self.dist_to[w])
+                else:
+                    self.pq.append((w, self.dist_to[w]))
+                self.pq.sort(key=lambda a: a[1])
+
+
 def test():
     g = Graph(6)
     with open('./tinyCG.txt') as fp:
@@ -279,7 +382,21 @@ def test_weight_graph():
     print g
     mst = LazyPrimeMST(g)
     print mst.queue
+    mst = KruskaMST(g)
+    print mst.mst
+
+
+def test_directed_weight_granph():
+    g = EdgeWeightedDigraph(8)
+    with open('./tinyEWD.txt') as fp:
+        for l in fp:
+            v, w, weight = l.split(' ')
+            e = DirectedEdge(int(v), int(w), float(weight))
+            g.add_edge(e)
+    print g
+    mst = Dijkstra(g, 0)
+    print mst.edge_to
 
 
 if __name__ == '__main__':
-    test_weight_graph()
+    test_directed_weight_granph()
